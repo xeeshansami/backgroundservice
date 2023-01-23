@@ -87,7 +87,7 @@ class YourService : Service() {
                 }
             }
         }
-        timer!!.schedule(timerTask, 3600, 1000) //
+        timer!!.schedule(timerTask, 1000, 1000) //
     }
 
     fun stoptimertask() {

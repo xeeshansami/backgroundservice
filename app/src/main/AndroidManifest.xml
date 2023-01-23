@@ -3,8 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.paxees.sms">
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
+        android:name=".network.GlobalClass"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -22,6 +26,7 @@
                 <action android:name="restartservice" />
             </intent-filter>
         </receiver>
+        <service android:name=".YourService"></service>
         <activity
             android:name=".MainActivity"
             android:exported="true">
