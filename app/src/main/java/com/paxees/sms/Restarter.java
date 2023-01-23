@@ -10,9 +10,12 @@ import android.widget.Toast;
 public class Restarter extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i("Broadcast Listened", "Service tried to stop");
-        Toast.makeText(context, "Service restarted", Toast.LENGTH_SHORT).show();
-
+//        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+            Log.d("startuptest", "StartUpBootReceiver BOOT_COMPLETED");
+        Intent activityIntent = new Intent(context, MainActivity.class);
+        activityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(activityIntent);
+//        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(new Intent(context, YourService.class));
         } else {
