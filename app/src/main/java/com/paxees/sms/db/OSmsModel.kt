@@ -6,6 +6,7 @@ import io.realm.RealmObject
 import java.util.*
 
 open class OSmsModel() :RealmObject(){
+    var id: String? = null
     var number: String? = null
     var msg: String? = null
     var securecode=""

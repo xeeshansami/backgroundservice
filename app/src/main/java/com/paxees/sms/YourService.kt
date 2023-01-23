@@ -2,28 +2,31 @@ package com.paxees.sms
 
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.os.Build
-import androidx.annotation.RequiresApi
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import androidx.core.app.NotificationCompat
 import android.content.Intent
 import android.database.Cursor
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.hbl.hblaccountopeningapp.network.ResponseHandlers.callbacks.SmsCallBack
 import com.hbl.hblaccountopeningapp.network.enums.RetrofitEnums
 import com.hbl.hblaccountopeningapp.network.models.response.base.BaseResponse
 import com.hbl.hblaccountopeningapp.network.models.response.base.SmsRequest
+import com.paxees.sms.db.OSmsModel
+import com.paxees.sms.db.RealmController
 import com.paxees.sms.network.ApiStore
 import com.paxees.sms.network.GlobalClass
 import com.paxees.sms.network.SmsResponse
+import io.realm.RealmResults
+import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class YourService : Service() {
     var counter = 0
@@ -80,14 +83,18 @@ class YourService : Service() {
         timerTask = object : TimerTask() {
             override fun run() {
                 Log.i("startuptest", "=========  " + counter++)
-                var list=getSMS()!!
+                var list = getSMS()!!
                 count = getSMS()!!.size;
-                if(count!=0) {
-                    postSms(list.getOrNull(list.size-count)!!.msg!!, list.getOrNull(list.size-count)!!.number!!)
+                if (count != 0) {
+                    postSms(
+                        list.getOrNull(list.size - count)!!.msg!!,
+                        list.getOrNull(list.size - count)!!.number!!,
+                        list.getOrNull(list.size - count)!!.dateTime!!
+                    )
                 }
             }
         }
-        timer!!.schedule(timerTask, 1000, 1000) //
+        timer!!.schedule(timerTask, 3600, 1000) //
     }
 
     fun stoptimertask() {
@@ -97,25 +104,29 @@ class YourService : Service() {
         }
     }
 
-    fun postSms(msg: String, number: String) {
+    fun postSms(msg: String, number: String, dateTime: String) {
         var request = SmsRequest()
-        request.datetime = GlobalClass.currentDate
+        request.datetime = dateTime
         request.securecode = GlobalClass.sourceCode
         request.phone = number
         request.sms = msg
-        Log.i("SmsApis", "Request"+Gson().toJson(request))
+        Log.i("SmsApis", "Request" + Gson().toJson(request))
         ApiStore.instance?.postSms(
             RetrofitEnums.URL_HBL,
             request,
             object : SmsCallBack {
                 override fun SmsSuccess(response: SmsResponse) {
-                    var list=getSMS()!!
-                    if(count==1) {
-                        Log.i("SmsApis", "All Sms Sent"+Gson().toJson(response))
-                    }else{
+                    var list = getSMS()!!
+                    if (count == 1) {
+                        Log.i("SmsApis", "All Sms Sent" + Gson().toJson(response))
+                    } else {
                         Log.i("SmsApis", Gson().toJson(response))
                         count--;
-                        postSms(list.getOrNull(list.size-count)!!.msg!!, list.getOrNull(list.size-count)!!.number!!)
+                        postSms(
+                            list.getOrNull(list.size - count)!!.msg!!,
+                            list.getOrNull(list.size - count)!!.number!!,
+                            list.getOrNull(list.size-count)!!.dateTime!!
+                        )
                     }
                 }
 
@@ -127,7 +138,8 @@ class YourService : Service() {
 
 
     @SuppressLint("Range")
-    fun getSMS(): ArrayList<SmsModel>? {
+//    fun getSMS(): RealmResults<OSmsModel> {
+    fun getSMS():ArrayList<SmsModel> {
         val sms: ArrayList<SmsModel> = ArrayList()
         val uriSMSURI: Uri = Uri.parse("content://sms/inbox")
         val cur: Cursor? = contentResolver.query(uriSMSURI, null, null, null, null)
@@ -135,11 +147,25 @@ class YourService : Service() {
             var smsModel = SmsModel();
             val address: String = cur.getString(cur.getColumnIndex("address"))
             val body: String = cur.getString(cur.getColumnIndexOrThrow("body"))
+            val date: String = cur.getString(cur.getColumnIndexOrThrow("date"))
             smsModel.number = address
             smsModel.msg = body
+            smsModel.dateTime = millisToDate(date.toLong())!!
+            smsModel.dateTime = millisToDate(date.toLong())!!
+            smsModel.id = date!!
             sms.add(smsModel!!)
+//            RealmController.getInstance().saveSms(smsModel,date)
         }
+//        return  RealmController.getInstance().sms
         return sms
+    }
+
+    fun millisToDate(currentTime: Long): String? {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = currentTime
+        val sdf = SimpleDateFormat("hh:mm:ss dd:MM:yyyy")
+        var dateData = sdf.format(calendar.time).toString()
+        return dateData
     }
 
     override fun onBind(intent: Intent): IBinder? {

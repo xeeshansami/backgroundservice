@@ -5,6 +5,7 @@ import android.os.Parcelable
 import java.util.*
 
 class SmsModel() : Parcelable {
+    var id: String? = null
     var number: String? = null
     var msg: String? = null
     var securecode=""
