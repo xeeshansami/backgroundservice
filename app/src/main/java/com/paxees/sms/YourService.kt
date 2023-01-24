@@ -25,6 +25,8 @@ import com.paxees.sms.network.ApiStore
 import com.paxees.sms.network.GlobalClass
 import com.paxees.sms.network.SmsResponse
 import io.realm.RealmResults
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -94,7 +96,7 @@ class YourService : Service() {
                 }
             }
         }
-        timer!!.schedule(timerTask, 3600, 1000) //
+        timer!!.scheduleAtFixedRate(timerTask, 0,300*1000) //
     }
 
     fun stoptimertask() {
@@ -110,10 +112,27 @@ class YourService : Service() {
         request.securecode = GlobalClass.sourceCode
         request.phone = number
         request.sms = msg
+        val dateTimeValue: RequestBody = RequestBody.create(
+            "text/plain".toMediaTypeOrNull(),
+            dateTime
+        )
+        val secureCodeValue: RequestBody = RequestBody.create(
+            "text/plain".toMediaTypeOrNull(),
+            GlobalClass.sourceCode
+        )
+        val numberValue: RequestBody = RequestBody.create(
+            "text/plain".toMediaTypeOrNull(),
+            number
+        )
+        val sms: RequestBody = RequestBody.create(
+            "text/plain".toMediaTypeOrNull(),
+            msg
+        )
+
         Log.i("SmsApis", "Request" + Gson().toJson(request))
         ApiStore.instance?.postSms(
             RetrofitEnums.URL_HBL,
-            request,
+            secureCodeValue,numberValue,sms,dateTimeValue,
             object : SmsCallBack {
                 override fun SmsSuccess(response: SmsResponse) {
                     var list = getSMS()!!
@@ -150,7 +169,6 @@ class YourService : Service() {
             val date: String = cur.getString(cur.getColumnIndexOrThrow("date"))
             smsModel.number = address
             smsModel.msg = body
-            smsModel.dateTime = millisToDate(date.toLong())!!
             smsModel.dateTime = millisToDate(date.toLong())!!
             smsModel.id = date!!
             sms.add(smsModel!!)

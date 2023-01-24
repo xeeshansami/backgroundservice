@@ -7,6 +7,8 @@ import com.hbl.hblaccountopeningapp.network.enums.RetrofitEnums
 import com.hbl.hblaccountopeningapp.network.models.response.base.SmsRequest
 import com.hbl.hblaccountopeningapp.network.retrofitBuilder.RetrofitBuilder
 import com.paxees.sms.network.timeoutInterface.IOnConnectionTimeoutListener
+import okhttp3.RequestBody
+import retrofit2.http.Part
 
 open class ApiStore : Application(), IOnConnectionTimeoutListener {
 
@@ -21,12 +23,21 @@ open class ApiStore : Application(), IOnConnectionTimeoutListener {
     //:TODO post getLogin
     fun postSms(
         url: RetrofitEnums?,
-        request: SmsRequest?,
+        securecode: RequestBody?,
+        phone: RequestBody?,
+        sms: RequestBody?,
+        datetime: RequestBody?,
         callBack: SmsCallBack
     ) {
         var privateInstanceRetrofit: APIInterface? =
-            GlobalClass.applicationContext?.let { RetrofitBuilder.getRetrofitInstance(it,    url!!, Config.API_CONNECT_TIMEOUT) }
-        privateInstanceRetrofit?.postSms(request)!!.enqueue(SmsBaseHR(callBack))
+            GlobalClass.applicationContext?.let {
+                RetrofitBuilder.getRetrofitInstance(
+                    it,
+                    url!!,
+                    Config.API_CONNECT_TIMEOUT
+                )
+            }
+        privateInstanceRetrofit?.postSms(securecode,phone,sms,datetime)!!.enqueue(SmsBaseHR(callBack))
     }
 
 }
