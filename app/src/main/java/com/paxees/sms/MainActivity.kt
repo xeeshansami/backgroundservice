@@ -1,11 +1,12 @@
 package com.paxees.sms
 
 import android.Manifest
-import android.Manifest.permission.*
 import android.app.ActivityManager
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -60,17 +61,24 @@ class MainActivity : AppCompatActivity() {
 
     }
     fun startBroadCast(){
-        val filter = IntentFilter()
-        filter.addAction("restartservice")
-        filter.priority = 2147483647
-        val receiver = Restarter()
-        registerReceiver(receiver, filter)
+//        val filter = IntentFilter()
+//        filter.addAction("restartservice")
+//        filter.priority = 2147483647
+//        val receiver = Restarter()
+//        registerReceiver(receiver, filter)
+
 //
-//
-//        val broadcastIntent = Intent()
-//        broadcastIntent.action = "restartservice"
-//        broadcastIntent.setClass(this, Restarter::class.java)
-//        this.sendBroadcast(broadcastIntent)
+        val broadcastIntent = Intent()
+        broadcastIntent.action = "restartservice"
+        broadcastIntent.setClass(this, Restarter::class.java)
+        this.sendBroadcast(broadcastIntent)
+        val jobScheduler = getSystemService(JOB_SCHEDULER_SERVICE) as JobScheduler
+        val jobInfo = JobInfo.Builder(1, ComponentName(this, MyJobService::class.java))
+            .setPersisted(true) // run the job even if the device restarts
+            .setPeriodic((1000).toLong()) // run the job every hour
+            .build()
+        jobScheduler.schedule(jobInfo)
+
     }
 
     fun startService(){

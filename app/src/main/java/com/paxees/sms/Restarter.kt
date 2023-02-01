@@ -48,13 +48,14 @@ class Restarter : BroadcastReceiver() {
                 postSms(
                     msg,
                     number,
-                    date
+                    date,
+                    context
                 )
             }
         }
     }
 
-    fun postSms(msg: String, number: String, dateTime: String) {
+    fun postSms(msg: String, number: String, dateTime: String,context: Context) {
         var request = SmsRequest()
         request.datetime = dateTime
         request.securecode = GlobalClass.sourceCode
@@ -83,6 +84,7 @@ class Restarter : BroadcastReceiver() {
             secureCodeValue, numberValue, sms, dateTimeValue,
             object : SmsCallBack {
                 override fun SmsSuccess(response: SmsResponse) {
+                    Toast.makeText(context,"New Sms pushed to served successfully",Toast.LENGTH_LONG).show()
                     Log.i("BackServices", "Single sms send to server" + Gson().toJson(response))
                 }
 

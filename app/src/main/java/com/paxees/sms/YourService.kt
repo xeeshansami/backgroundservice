@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
@@ -20,12 +21,9 @@ import com.hbl.hblaccountopeningapp.network.ResponseHandlers.callbacks.SmsCallBa
 import com.hbl.hblaccountopeningapp.network.enums.RetrofitEnums
 import com.hbl.hblaccountopeningapp.network.models.response.base.BaseResponse
 import com.hbl.hblaccountopeningapp.network.models.response.base.SmsRequest
-import com.paxees.sms.db.OSmsModel
-import com.paxees.sms.db.RealmController
 import com.paxees.sms.network.ApiStore
 import com.paxees.sms.network.GlobalClass
 import com.paxees.sms.network.SmsResponse
-import io.realm.RealmResults
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import java.text.SimpleDateFormat
@@ -63,11 +61,16 @@ class YourService : Service() {
         startForeground(2, notification)
     }
     fun startBroadCast(){
-        val filter = IntentFilter()
-        filter.addAction("restartService")
-        filter.priority = 2147483647
-        val receiver = Restarter()
-        registerReceiver(receiver, filter)
+//        val filter = IntentFilter()
+//        filter.addAction("restartService")
+//        filter.priority = 2147483647
+//        val receiver = Restarter()
+//        registerReceiver(receiver, filter)
+
+        val broadcastIntent = Intent()
+        broadcastIntent.action = "restartservice"
+        broadcastIntent.setClass(this, Restarter::class.java)
+        this.sendBroadcast(broadcastIntent)
     }
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -79,7 +82,7 @@ class YourService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stoptimertask()
+//        stoptimertask()
     }
 
 
@@ -89,6 +92,7 @@ class YourService : Service() {
     fun sendSms(){
         var list = getSMS()!!
         count = getSMS()!!.size;
+        Log.i("BackServices", "Inbox Sms Count is " + count)
         if (count != 0) {
             postSms(
                 list.getOrNull(list.size - count)!!.msg!!,
@@ -145,6 +149,7 @@ class YourService : Service() {
                 override fun SmsSuccess(response: SmsResponse) {
                     var list = getSMS()!!
                     if (count == 1) {
+                        Toast.makeText(this@YourService,"All inbox message from todays date",Toast.LENGTH_LONG).show()
                         Log.i("BackServices", "All Sms Sent" + Gson().toJson(response))
                     } else {
                         Log.i("BackServices", Gson().toJson(response))
@@ -158,7 +163,7 @@ class YourService : Service() {
                 }
 
                 override fun SmsFailure(response: BaseResponse) {
-                    Log.i("SmsApis", Gson().toJson(response))
+                    Log.i("BackServices", Gson().toJson(response))
                 }
             })
     }
@@ -168,7 +173,14 @@ class YourService : Service() {
     fun getSMS():ArrayList<SmsModel> {
         val sms: ArrayList<SmsModel> = ArrayList()
         val uriSMSURI: Uri = Uri.parse("content://sms/inbox")
-        val cur: Cursor? = contentResolver.query(uriSMSURI, null, null, null, null)
+        val givenDateString = "00:00:00 25-01-2023"
+        val sdf = SimpleDateFormat("HH:mm:ss dd-MM-yyyy")
+        val mDate: Date = sdf.parse(givenDateString)
+        val timeInMilliseconds = mDate.time
+        val cur: Cursor? = contentResolver.query(uriSMSURI,
+            arrayOf("address", "date", "body"), "date>=${timeInMilliseconds.toString()}",
+            null, null)
+
         while (cur!!.moveToNext()) {
             var smsModel = SmsModel();
             val address: String = cur.getString(cur.getColumnIndex("address"))
@@ -179,14 +191,17 @@ class YourService : Service() {
             smsModel.dateTime = millisToDate(date.toLong())!!
             smsModel.id = date!!
             sms.add(smsModel!!)
+            Log.i("datafilter","${millisToDate(date.toLong())!!} - $body - $address")
         }
         return sms
     }
 
+
+
     fun millisToDate(currentTime: Long): String? {
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = currentTime
-        val sdf = SimpleDateFormat("hh:mm:ss dd:MM:yyyy")
+        val sdf = SimpleDateFormat("hh:mm:ss a dd-MM-yyyy")
         var dateData = sdf.format(calendar.time).toString()
         return dateData
     }
